@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- <meta charset="utf-8">
+  <meta name="description"
+        content="Deformable Neural Radiance Fields creates free-viewpoint portraits (nerfies) from casually captured videos.">
+  <meta name="keywords" content="Nerfies, D-NeRF, NeRF">
+  <meta name="viewport" content="width=device-width, initial-scale=1"> -->
+  <title>SurFhead</title>
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-PYVRSFMDRL"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+
+    gtag('js', new Date());
+
+    gtag('config', 'G-PYVRSFMDRL');
+  </script>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+        rel="stylesheet">
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+  <link rel="icon" href="./static/figures/surf-icon.png">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script src="./static/js/bulma-carousel.min.js"></script>
+  <script src="./static/js/bulma-slider.min.js"></script>
+  <script src="https://unpkg.com/interactjs/dist/interact.min.js"></script>
+  <script src="./static/js/index.js"></script>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+  </script>
+  <script type="text/javascript"
+      src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+    </script>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style_slider1.css">
+  <link rel="stylesheet" href="style_slider2.css">
+  <link rel="stylesheet" href="style_slider3.css">
+  <link rel="stylesheet" href="style_slider4.css">
+  <style>
+      .title .title_highlight {
+        font-weight: bold;
+        color: #0056b3 !important; /* `!important`를 추가하여 우선순위를 높임 */
+        font-size: 60px;
+      }
+      .ours_highlight {
+        font-weight: bold;
+        color: #0056b3 !important;
+      }
+      .section .title.is-3 {
+          margin-bottom: 30px; /* 제목과 내용 사이의 간격 조정 */
+      }
+      .container.is-max-desktop .content {
+          max-width: 650px; /* 내용의 최대 너비 설정 */
+          margin-left: auto; /* 왼쪽 마진 자동 조정 */
+          margin-right: auto; /* 오른쪽 마진 자동 조정 */
+      }
+      .container.is-max-desktop .figure {
+          max-width: 800px; /* 내용의 최대 너비 설정 */
+          margin-left: auto; /* 왼쪽 마진 자동 조정 */
+          margin-right: auto; /* 오른쪽 마진 자동 조정 */
+      }
+      .carousel {
+        display: flex;
+        overflow: hidden;
+        scroll-snap-type: x mandatory;
+      }
+
+      .carousel .item {
+        min-width: 100%;
+        box-sizing: border-box;
+        scroll-snap-align: center;
+        transition: transform 0.5s ease;
+      }
+      .carousel video {
+        width: 100%; /* 비디오가 컨테이너에 꽉 차게 설정 */
+        height: auto; /* 자동으로 높이를 조절하여 비율 유지 */
+      }
+      .render_wrapper {
+			position: relative;
+            height: 300px;
+         }
+      .render_wrapper_small {
+      position: relative;
+          height: 200px;
+        }
+      .render_div {
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+
+      #interpolation-image-wrapper-car{
+          text-align: center;
+      }
+      #interpolation-image-wrapper-chair{
+          text-align: center;
+      }
+      .nested-columns {
+          margin-bottom: 0 !important;
+      }
+      .carousel {
+          position: relative;
+          overflow: hidden;
+      }
+
+      .carousel-item {
+          display: none;
+          width: 100%;
+      }
+
+      .carousel-item.active {
+          display: block;
+      }
+
+      .carousel-item video {
+          width: 100%;
+          height: auto;
+      }
+
+      .carousel-controls {
+          text-align: center;
+          margin-top: 10px;
+      }
+</style>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+</script>
+<script type="text/javascript"
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-1 publication-title">
+            <img src="./static/figures/surf-icon.png" style="height:100px;"> <!-- 이미지 크기 조절 -->
+            <strong class="title_highlight">SurFhead</strong>: Affine Rig Blending for Geometrically Accurate 2D Gaussian <br> Surfel-based Head Avatars
+          </h1>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block"></span>
+              Anonymous Authors
+            </span>
+          </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <figure class="figure">
+        <img src="./static/figures/teaset.png" class="figure-img img-fluid" alt="Responsive image" style="margin:20px 0px;">
+        <figcaption class="figure-caption text-justify" style="margin:30px 0px;">
+            <center>
+              SurFhead not only reconstructs photorealistic head avatars but also high-fidelity surface
+              normals, depth, and meshes from RGB videos alone. These avatars are represented through affine
+              rigging of 2D surfel splats bound to a parametric morphable face model. SurFhead allow us to fully
+              control poses, expressions, and viewpoints, enhancing the both appearance and geometry.
+            </center>
+        </figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="hero is-light is-small">
+  <div class="hero-body">
+    <div style="text-align: center;" >
+      <p style="font-size: 28px;">
+          Cross-reenactment results of <b>SurFhead</b>.
+      </p>
+      <p>
+          <b>Left</b>: held-out sequence; <b>Right</b>: Cross-reenactment.
+      </p>
+
+  </div>
+    <div class="hero-body">
+        <div id="results-container" class="container" style="width: 100%;">
+            <div id="results-carousel" class="carousel results-carousel">
+                <div class="item item-55">
+                    <video poster="" id="55" autoplay controls muted loop playsinline height="100%">
+                      <source src="./static/videos/cross_surf.mp4"
+                                type="video/mp4">
+                    </video>
+                </div>
+                <div class="item item-1">
+                  <video poster="" id="1" autoplay controls muted loop playsinline height="100%">
+                    <source src="./static/videos/cross_surf_02.mp4"
+                              type="video/mp4">
+                  </video>
+                </div>
+                <!-- <div class="item item-1">
+                    <video poster="" id="1" autoplay controls muted loop playsinline height="100%">
+                      <source src="./static/videos/cross_1.mp4"
+                                type="video/mp4">
+                    </video>
+                </div> -->
+        </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- Abstract. -->
+      <center>
+    <h2 class="title is-3">Abstract</h2>
+      </center>
+        <div class="content has-text-justified">
+          Recent advancements in head avatar rendering using Gaussian primitives have
+	achieved significantly high-fidelity results. Although precise head geometry is
+	crucial for applications like mesh reconstruction and relighting, current meth-
+	ods struggle to capture intricate geometric details and render unseen poses due
+	to their reliance on similarity transformations, which cannot handle stretch and
+	shear transforms essential for detailed deformations of geometry. To address this,
+	we propose SurFhead, a novel method that reconstructs riggable head geometry
+	from RGB videos using 2D Gaussian surfels, which offer well-defined geometric
+	properties, such as precise depth from fixed ray intersections and normals derived
+	from their surface orientation, making them advantageous over 3D counterparts.
+	SurFhead ensures high-fidelity rendering of both normals and images, even in ex-
+	treme poses, by leveraging classical mesh-based deformation transfer and affine
+	transformation interpolation. SurFhead introduces precise geometric deforma-
+	tion and blends surfels through polar decomposition of transformations, including
+	those affecting normals. Our key contribution lies in bridging classical graphics
+	techniques, such as mesh-based deformation, with modern Gaussian primitives,
+	achieving state-of-the-art geometry reconstruction and rendering quality. Unlike
+	previous avatar rendering approaches, SurFhead enables efficient reconstruction
+	driven by Gaussian primitives while preserving high-fidelity geometry.
+        </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <center>
+    <h2 class="title is-3">Method overview</h2>
+    </center>
+    <div>
+        <center>
+            <figure class="figure">
+                <img src="./static/figures/main_figure.png" class="figure-img img-fluid" alt="Responsive image" style="margin:0px;">
+                <figcaption class="figure-caption text-justify">
+                    <center>
+                      Overall pipeline of SurFhead. Only from RGB videos, SurFhead constructs geometrically 
+			accurate head avatars, equipped with our intricate deformations. The Jacobian covers stretch
+			and shear deformations avoiding surface distortion. Moreover, the blended Jacobian alleviates
+			inherent local deformations’ discontinuity. Finally, elaborated modeling of eyeballs such as preser-
+			vation of specularity and convexity achieves more realistic appearance and geometry.
+                    </center>
+                </figcaption>
+                <!-- <img src="./static/figures/model_figure_v10.jpg" class="figure-img img-fluid" alt="Responsive image" style="margin:0px;">
+                <figcaption class="figure-caption text-justify">
+                    <center>
+                        A diagram of our proposed method.
+                    </center>
+                </figcaption> -->
+            </figure>
+        </center>
+      </div>
+  </div>
+</section>
+
+<section class="hero is-light is-small">
+  <div class="hero-body">
+    <div style="text-align: center;" >
+      <p style="font-size: 28px;">
+          Self-reenactment comparison with baselines.
+      </p>
+  </div>
+    <div class="hero-body">
+        <div id="results-container" class="container" style="width: 100%;">
+            <div id="results-carousel" class="carousel results-carousel">
+              <div class="item">
+                  <video poster="" id="55" autoplay controls muted loop playsinline>
+                      <source src="./static/videos/self-comparison_01.mp4" type="video/mp4">
+                  </video>
+              </div>
+              <div class="item">
+                <video poster="" id="55" autoplay controls muted loop playsinline>
+                    <source src="./static/videos/self-comparison_02.mp4" type="video/mp4">
+                </video>
+              </div>
+              <!-- <div class="carousel-item">
+                  <video poster="" id="1" autoplay controls muted loop playsinline>
+                      <source src="./static/videos/comparison_1.mp4" type="video/mp4">
+                  </video>
+              </div> -->
+              <!-- 추가 비디오 아이템들... -->
+          </div>
+        </div>
+    </div>
+  </div>
+</section>
+
+<section class="hero is-light is-small">
+  <div class="hero-body">
+    <div style="text-align: center;" >
+      <p style="font-size: 28px;">
+          Cross-reenactment comparison with baselines.
+      </p>
+
+  </div>
+    <div class="hero-body">
+        <div id="results-container" class="container" style="width: 100%;">
+            <div id="results-carousel" class="carousel results-carousel">
+              <div class="item">
+                  <video poster="" id="55" autoplay controls muted loop playsinline>
+                      <source src="./static/videos/comparison_01.mp4" type="video/mp4">
+                  </video>
+              </div>
+              <div class="item">
+                <video poster="" id="55" autoplay controls muted loop playsinline>
+                    <source src="./static/videos/copmarison_02.mp4" type="video/mp4">
+                </video>
+              </div>
+              <!-- <div class="carousel-item">
+                  <video poster="" id="1" autoplay controls muted loop playsinline>
+                      <source src="./static/videos/comparison_1.mp4" type="video/mp4">
+                  </video>
+              </div> -->
+              <!-- 추가 비디오 아이템들... -->
+          </div>
+        </div>
+    </div>
+  </div>
+</section>
+
+<section class="hero is-light is-small">
+  <div class="hero-body">
+    <div style="text-align: center;" >
+      <p style="font-size: 28px;">
+         Results for relighting with <a href="https://github.com/Asparagus15/GaussianShader.git"> GaussianShader</a>.
+      </p>
+
+  </div>
+    <div class="hero-body">
+        <div id="results-container" class="container" style="width: 100%;">
+            <div id="results-carousel" class="carousel results-carousel">
+              <div class="item">
+                  <video poster="" id="55" autoplay controls muted loop playsinline>
+                      <source src="./static/videos/relight_00.mp4" type="video/mp4">
+                  </video>
+              </div>
+              <!-- <div class="carousel-item">
+                  <video poster="" id="1" autoplay controls muted loop playsinline>
+                      <source src="./static/videos/comparison_1.mp4" type="video/mp4">
+                  </video>
+              </div> -->
+              <!-- 추가 비디오 아이템들... -->
+          </div>
+        </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content">
+          <!-- <p>
+            This website is licensed under a <a rel="license"
+                                                href="http://creativecommons.org/licenses/by-sa/4.0/">Creative
+            Commons Attribution-ShareAlike 4.0 International License</a>.
+          </p> -->
+          <p>
+            The website code is borrowed from the <a
+            href="https://github.com/nerfies/nerfies.github.io">source code</a> of Nerfies. We thank the authors for sharing the templates.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // 페이지 로드 후 모든 "SurFhead" 텍스트를 검색하여 스타일 적용
+    document.body.innerHTML = document.body.innerHTML.replace(/SurFhead/g, '<strong class="ours_highlight">SurFhead</strong>');
+  });
+</script>
+<script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+
+<script type="importmap">
+    {
+        "imports": {
+            "three": "./js/three.module.js"
+        }
+    }
+</script>
+
+<script type="module">
+
+    import * as THREE from 'three';
+
+    import { PLYLoader } from './js/PLYLoader.js';
+    import { OrbitControls } from './js/OrbitControls.js'
+    let div_to_scene = {
+        "mesh_chair_0": {
+            "geo": null,
+        },
+        "mesh_chair_1": {
+            "geo": null,
+        },
+        "mesh_chair_2": {
+            "geo": null,
+        },
+        "mesh_chair_3": {
+            "geo": null,
+        },
+        "mesh_car_0": {
+            "geo": null,
+        },
+        "mesh_car_1": {
+            "geo": null,
+        },
+        "mesh_car_2": {
+            "geo": null,
+        },
+        "mesh_car_3": {
+            "geo": null,
+        }
+    }
+    let div_to_render_scene = {
+        "mesh_style_0": {
+            "0": null,
+            "2": null,
+            "3": null,
+            "4": null,
+            "5": null,
+        },
+        "mesh_style_1": {
+            "0": null,
+            "2": null,
+            "3": null,
+            "4": null,
+            "5": null,
+        },
+        "mesh_style_2": {
+            "0": null,
+            "2": null,
+            "3": null,
+            "4": null,
+            "5": null,
+
+        },
+        "mesh_style_3": {
+            "0": null,
+            "2": null,
+            "3": null,
+            "4": null,
+            "5": null,
+        },
+    }
+    let mouse_button_down = false;
+    let list_of_orbit_controls = []
+    let style_camera = null;
+    let render_colors = true;
+    let style_id = "0"
+
+    function setup_camera(div_name){
+        let container = document.getElementById(div_name);
+        let width = container.parentElement.clientWidth;
+        let height = container.parentElement.clientHeight;
+        console.log(width, height)
+        let camera = new THREE.PerspectiveCamera( 35, width / height, 0.1, 50 );
+        //let camera_init_position = new THREE.Vector3( -1.5, 0.35, 1.2 );
+        let camera_init_position = new THREE.Vector3( 0., 0., 1.2 );
+        camera_init_position = camera_init_position.multiplyScalar(1.5)
+        //if (div_name.includes("style")) {
+        //    camera_init_position = camera_init_position.multiplyScalar(1.25)
+        //}
+        //else if (div_name.includes("style")) {
+        //    camera_init_position = camera_init_position.multiplyScalar(1.25)
+        //}
+        camera.position.set(camera_init_position.x, camera_init_position.y, camera_init_position.z);
+        return camera;
+    }
+
+    function setup_render_divs(div_name, mesh_path){
+        let camera = setup_camera(div_name)
+        let orbit_control = create_render_div(camera, div_name, mesh_path)
+        list_of_orbit_controls.push(orbit_control)
+    }
+
+    function setup_style_render_divs(div_name, mesh_path){
+        if (style_camera == null) {
+            style_camera = setup_camera(div_name)
+        }
+        let orbit_control = create_style_render_div(style_camera, div_name, mesh_path, true)
+        list_of_orbit_controls.push(orbit_control)
+        document.getElementById("style_button_0").addEventListener("click", set_style_0)
+        document.getElementById("style_button_2").addEventListener("click", set_style_2)
+        document.getElementById("style_button_3").addEventListener("click", set_style_3)
+        document.getElementById("style_button_4").addEventListener("click", set_style_4)
+        document.getElementById("style_button_5").addEventListener("click", set_style_5)
+    }
+
+    function create_render_div(camera, div_id, mesh_path) {
+        let container;
+        let renderer, controls;
+
+        init();
+        animate();
+
+        function init() {
+
+            container = document.getElementById(div_id);
+            let width = container.parentElement.clientWidth;
+            let height = container.parentElement.clientHeight;
+
+
+            div_to_scene[div_id]["geo"] = new THREE.Scene();
+            div_to_scene[div_id]["geo"].background = new THREE.Color( 0xffffff );
+            //var axesHelper = new THREE.AxesHelper( 5 );
+            //div_to_scene[div_id]["geo"].add( axesHelper );
+
+            // PLY file
+
+            const loader = new PLYLoader();
+            loader.load( mesh_path, function ( geometry ) {
+
+                geometry.computeVertexNormals();
+                //let material_geo = new THREE.MeshStandardMaterial( { color: 0x444444, flatShading: true, roughness: 0.5, metalness: 0.3 } )
+                //let material_geo = new THREE.MeshPhongMaterial( { color: 0x999999, depthWrite: false} )
+                const material_geo = new THREE.MeshPhongMaterial( {
+                                            color: 0xCCE6FF,
+                                            specular: 0x222222,
+                                            shininess: 25,} );
+
+                const mesh_geo = new THREE.Mesh( geometry, material_geo );
+                //mesh_geo.castShadow = true;
+        //mesh_geo.receiveShadow = true;
+                div_to_scene[div_id]["geo"].add( mesh_geo );
+
+            }, (xhr) => {
+                console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+            }, (error) => {
+                console.log(error)
+            }
+            );
+
+            // lights
+
+            //div_to_scene[div_id]["geo"].add( new THREE.HemisphereLight( 0x333333, 0x222222) );
+            //div_to_scene[div_id]["geo"].add(new THREE.AmbientLight( 0x333333, 1) );
+            //const directionalLight = new THREE.DirectionalLight( 0xffffff, 1. );
+            //directionalLight.position.set( 1, 1, 1 );
+            //div_to_scene[div_id]["geo"].add( directionalLight );
+            //addShadowedLight(div_to_scene[div_id]["geo"], -5, -5, 5, 0xffffff, 1. );
+            //addShadowedLight(div_to_scene[div_id]["geo"], 1, 1, 1, 0xffffff, 1.35 );
+            //addShadowedLight(div_to_scene[div_id]["geo"], -1, 1, -1, 0xffffff, 1.35 );
+            //addShadowedLight(div_to_scene[div_id]["geo"], 0, -2, 1, 0xffffff, 0.5 );
+            //addShadowedLight(div_to_scene[div_id]["geo"],  0, -1, 2, 0xffffff, 0.5 );
+
+            add_lights(div_to_scene[div_id]["geo"])
+
+
+
+
+            // renderer
+
+            renderer = new THREE.WebGLRenderer( { antialias: true } );
+            renderer.setPixelRatio( window.devicePixelRatio );
+            renderer.setSize( width, height);
+            renderer.outputEncoding = THREE.sRGBEncoding;
+
+            //renderer.shadowMap.enabled = true;
+
+            container.appendChild( renderer.domElement );
+
+            controls = new OrbitControls(camera, renderer.domElement)
+            controls.enableDamping = false
+            controls.autoRotate = true
+
+
+            // resize
+
+            window.addEventListener( 'resize', onWindowResize );
+            //controls.addEventListener('change', onChange)
+            controls.addEventListener('start', function(){
+              //clearTimeout(autorotateTimeout);
+              controls.autoRotate = false;
+            });
+
+            // restart autorotate after the last interaction & an idle time has passed
+            //this.controls.addEventListener('end', function(){
+            //  autorotateTimeout = setTimeout(function(){
+            //    controls.autoRotate = true;
+            //  }, 1000);
+            //});
+
+    }
+        function onWindowResize() {
+            let width = container.clientWidth;
+            let height = container.clientHeight;
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize( width, height );
+        }
+        function animate() {
+            requestAnimationFrame( animate );
+            controls.update();
+            render();
+        }
+
+        function render() {
+            renderer.render( div_to_scene[div_id]["geo"], camera );
+            controls.update();
+        }
+
+        return controls;
+    }
+
+    function add_lights(scene) {
+            scene.add( new THREE.HemisphereLight( 0x443333, 0x111122 ,0.05) );
+    const spotLight = new THREE.SpotLight( 0xffffff, 0.5 );
+    spotLight.position.set( 0.0, 0.5, 1 );
+    const spotLight2 = new THREE.SpotLight( 0xffffff, 0.25 );
+      spotLight2.position.set( -2, 0.3, -0.2 );
+    const spotLight3 = new THREE.SpotLight( 0xffffff, 0.25 );
+    spotLight3.position.set( 2, -0.3, 0.2 );
+    const spotLight4 = new THREE.SpotLight( 0xffffff, 0.25 );
+    spotLight4.position.set( 0.0, 1, -2 );
+    const spotLight5 = new THREE.SpotLight( 0xffffff, 0.05 );
+    spotLight5.position.set( 0, -2.5, -1 );
+    ////spotLight.position.multiplyScalar( 700 );
+    scene.add( spotLight );
+    scene.add( spotLight2 );
+    scene.add( spotLight3 );
+    scene.add( spotLight4 );
+    scene.add( spotLight5 );
+
+
+    }
+
+    function add_lightsBACKUP(scene) {
+            scene.add( new THREE.HemisphereLight( 0x443333, 0x111122 ,0.05) );
+    const spotLight = new THREE.SpotLight( 0xffffff, 0.6 );
+    spotLight.position.set( 0.5, 0.5, 1 );
+    const spotLight2 = new THREE.SpotLight( 0xffffff, 0.3 );
+    spotLight2.position.set( -0.75, 0.2, 0 );
+    const spotLight3 = new THREE.SpotLight( 0xffffff, 0.3 );
+    spotLight3.position.set( -0.5, 0, 1 );
+    const spotLight4 = new THREE.SpotLight( 0xffffff, 0.3 );
+    spotLight4.position.set( 0.5, 0.5, -1 );
+    const spotLight5 = new THREE.SpotLight( 0xffffff, 0.15 );
+    spotLight5.position.set( 0, -1.5, 0 );
+    ////spotLight.position.multiplyScalar( 700 );
+    scene.add( spotLight );
+    scene.add( spotLight2 );
+    //div_to_scene[div_id]["geo"].add( spotLight3 );
+    scene.add( spotLight4 );
+    scene.add( spotLight5 );
+    }
+
+    function create_style_render_div(camera, div_id, mesh_path) {
+        let container;
+        let renderer, controls;
+
+        init();
+        animate();
+
+        function init() {
+
+            container = document.getElementById(div_id);
+            let width = container.parentElement.clientWidth;
+            let height = container.parentElement.clientHeight;
+
+
+            div_to_render_scene[div_id]["0"] = new THREE.Scene();
+            div_to_render_scene[div_id]["1"] = new THREE.Scene();
+            div_to_render_scene[div_id]["2"] = new THREE.Scene();
+            div_to_render_scene[div_id]["3"] = new THREE.Scene();
+            div_to_render_scene[div_id]["4"] = new THREE.Scene();
+            div_to_render_scene[div_id]["5"] = new THREE.Scene();
+            div_to_render_scene[div_id]["6"] = new THREE.Scene();
+            div_to_render_scene[div_id]["0"].background = new THREE.Color( 0xffffff );
+            div_to_render_scene[div_id]["1"].background = new THREE.Color( 0xffffff );
+            div_to_render_scene[div_id]["2"].background = new THREE.Color( 0xffffff );
+            div_to_render_scene[div_id]["3"].background = new THREE.Color( 0xffffff );
+            div_to_render_scene[div_id]["4"].background = new THREE.Color( 0xffffff );
+            div_to_render_scene[div_id]["5"].background = new THREE.Color( 0xffffff );
+            div_to_render_scene[div_id]["6"].background = new THREE.Color( 0xffffff );
+
+            // PLY file
+
+            const loader = new PLYLoader();
+            ["0","2", "3", "4", "5"].forEach(id => {
+                loader.load( mesh_path + id + ".ply", function ( geometry ) {
+                    geometry.computeVertexNormals();
+                    //let material = new THREE.MeshStandardMaterial( { color: 0xffffff} );
+                    const material = new THREE.MeshPhongMaterial( {
+                                            color: 0xCCE6FF,
+                                            specular: 0x222222,
+                                            shininess: 25,} );
+                    const mesh_color = new THREE.Mesh( geometry, material );
+                    div_to_render_scene[div_id][id].add( mesh_color );
+                    //if (id === "0") {
+                    //let material_geo = new THREE.MeshStandardMaterial( { color: 0x444444, flatShading: true } )
+                    //const mesh_geo = new THREE.Mesh( geometry, material_geo );
+                    //div_to_render_scene[div_id]["geo"].add( mesh_geo );
+                    //}
+                    //div_to_render_scene[div_id][id].add( new THREE.HemisphereLight( 0x333333, 0x222222 ) );
+                    //addShadowedLight(div_to_render_scene[div_id][id], 1, 1, 1, 0xffffff, 1.35 );
+                    //addShadowedLight(div_to_render_scene[div_id][id],  0.5, 1, - 1, 0xffffff, 1 );
+                    add_lights(div_to_render_scene[div_id][id]);
+                }, (xhr) => {
+                    console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+                }, (error) => {
+                    console.log(error)
+                }
+                );
+            })
+
+
+
+            // renderer
+
+            renderer = new THREE.WebGLRenderer( { antialias: true } );
+            renderer.setPixelRatio( window.devicePixelRatio );
+            renderer.setSize( width, height);
+            renderer.outputEncoding = THREE.sRGBEncoding;
+
+            renderer.shadowMap.enabled = true;
+
+            container.appendChild( renderer.domElement );
+
+            controls = new OrbitControls(camera, renderer.domElement)
+            controls.enableDamping = false
+
+            // resize
+
+            window.addEventListener( 'resize', onWindowResize );
+
+    }
+        function onWindowResize() {
+            let width = container.clientWidth;
+            let height = container.clientHeight;
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize( width, height );
+        }
+        function animate() {
+            requestAnimationFrame( animate );
+            render();
+        }
+
+        function render() {
+            let scene = div_to_render_scene[div_id][style_id]
+            renderer.render( scene, camera );
+            controls.update();
+        }
+
+        return controls;
+    }
+
+    function addShadowedLight(scene, x, y, z, color, intensity ) {
+
+        const directionalLight = new THREE.DirectionalLight( color, intensity );
+        directionalLight.position.set( x, y, z );
+        scene.add( directionalLight );
+
+        directionalLight.castShadow = true;
+
+        const d = 1;
+        directionalLight.shadow.camera.left = - d;
+        directionalLight.shadow.camera.right = d;
+        directionalLight.shadow.camera.top = d;
+        directionalLight.shadow.camera.bottom = - d;
+
+        directionalLight.shadow.camera.near = 1;
+        directionalLight.shadow.camera.far = 4;
+
+        directionalLight.shadow.mapSize.width = 1024;
+        directionalLight.shadow.mapSize.height = 1024;
+
+        directionalLight.shadow.bias = - 0.001;
+
+    }
+
+    document.addEventListener('keydown', logKey);
+
+    function logKey(evt) {
+        if (evt.keyCode === 71 && !mouse_button_down) {
+            switch_geometry()
+        }
+        if (evt.keyCode === 82 && !mouse_button_down) {
+            reset_orbit_controls()
+        }
+    }
+
+    function switch_geometry() {
+        render_colors = !render_colors
+    }
+
+    function reset_orbit_controls() {
+        list_of_orbit_controls.forEach(oc => {
+            oc.reset()
+            oc.autoRotate = false
+        })
+    }
+
+    function set_style_0(){
+        style_id = "0"
+    }
+
+    function set_style_1(){
+        style_id = "1"
+    }
+
+    function set_style_2(){
+        style_id = "2"
+    }
+
+    function set_style_3(){
+        style_id = "3"
+    }
+
+    function set_style_4(){
+        style_id = "4"
+    }
+    function set_style_5(){
+        style_id = "5"
+    }
+    function set_style_6(){
+        style_id = "6"
+    }
+
+    document.body.onmousedown = function(evt) {
+        if (evt.button === 0)
+            mouse_button_down = true
+    }
+    document.body.onmouseup = function(evt) {
+        if (evt.button === 0)
+            mouse_button_down = false
+    }
+
+    window.onload = function() {
+        let slider = document.getElementsByClassName("slider")[0]
+        slider.removeAttribute("tabIndex")
+        // slider.addEventListener("mouseout", reset_orbit_controls);
+        setup_render_divs("mesh_chair_1", './mesh/fuse_for_toggle_post_264.ply')
+        setup_render_divs("mesh_chair_2", './mesh/fuse_for_toggle_post_264.ply')
+        setup_render_divs("mesh_chair_3", './mesh/fuse_for_toggle_post_264.ply')
+        setup_render_divs("mesh_car_1", './mesh/fuse_for_toggle_post_264.ply')
+        setup_render_divs("mesh_car_3", './mesh/fuse_for_toggle_post_264.ply')
+        //setup_style_render_divs("mesh_style_0", './models/chair_style_0')
+        //setup_style_render_divs("mesh_style_1", './models/chair_style_1')
+        //setup_style_render_divs("mesh_style_2", './models/chair_style_2')
+        //setup_style_render_divs("mesh_style_3", './models/chair_style_3')
+        setup_style_render_divs("mesh_style_0", './models/mesh_mustafa_')
+        setup_style_render_divs("mesh_style_1", './models/mesh_id98_')
+        setup_style_render_divs("mesh_style_2", './models/mesh_id97_')
+        setup_style_render_divs("mesh_style_3", './models/mesh_id95_')
+    };
+
+</script>
+</body>
+</html>
